@@ -1,7 +1,7 @@
-<div id="web-interaction-gallery">
+<div id="web-interaction-gallery" data-initial-effect="L01">
   <div class="wi-top">
     <h2>网页交互效果预览</h2>
-    <span class="text-small text-muted">两期内容 · 28 项原理演示</span>
+    <span class="text-small text-muted" data-count>视频与截图参考 · 32 项原理演示</span>
   </div>
   <div class="wi-selected" aria-live="polite">
     <h3 data-name></h3>
@@ -27,6 +27,17 @@
     <button class="btn" type="button" data-direction="right">从右侧</button>
     <button class="btn" type="button" data-direction="top">从上方</button>
     <button class="btn" type="button" data-direction="bottom">从下方</button>
+  </div>
+  <div class="wi-physics-controls" data-physics-controls hidden>
+    <div>
+      <label class="form-label" for="wi-damping">阻尼比 ζ <output class="tabular-nums" data-damping-value>1.00</output></label>
+      <input class="form-range" id="wi-damping" type="range" min="0.2" max="2" step="0.05" value="1">
+    </div>
+    <div data-velocity-controls>
+      <label class="form-label" for="wi-velocity">模拟松手速度 <output class="tabular-nums" data-velocity-value>+3.00 轨道/秒</output></label>
+      <input class="form-range" id="wi-velocity" type="range" min="-4" max="4" step="0.25" value="3">
+      <label class="form-check"><input class="form-check-input" type="checkbox" data-carry checked><span class="form-check-label">继承松手速度</span></label>
+    </div>
   </div>
   <div class="wi-catalogue" data-catalogue aria-label="全部交互效果"></div>
   <details class="wi-details">
@@ -86,6 +97,14 @@
 #web-interaction-gallery .wi-group{display:flex;flex-direction:column;gap:calc(var(--font-size-base)*.5);min-width:0}
 #web-interaction-gallery .wi-status{min-height:1.5em}
 #web-interaction-gallery .wi-details{display:grid;gap:calc(var(--font-size-base)*.5)}
+#web-interaction-gallery .wi-physics-controls{display:grid;gap:calc(var(--font-size-base)*1)}
+#web-interaction-gallery .wi-spring-rail{position:absolute;inset:42px 24px 40px}
+#web-interaction-gallery .wi-spring-line{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--border)}
+#web-interaction-gallery .wi-spring-edge{position:absolute;top:25%;bottom:25%;width:2px;background:var(--foreground);opacity:.45}
+#web-interaction-gallery .wi-spring-edge.right{right:0}
+#web-interaction-gallery .wi-spring-target{position:absolute;top:calc(50% + 32px);transform:translateX(-50%);white-space:nowrap}
+#web-interaction-gallery .wi-spring-carrier{position:absolute;left:0;top:50%;touch-action:none;user-select:none;will-change:transform}
+#web-interaction-gallery .wi-physics-readout{position:absolute;left:16px;right:16px;bottom:12px;text-align:center}
 #web-interaction-gallery [hidden]{display:none!important}
 @media(max-width:580px){#web-interaction-gallery .wi-catalogue{grid-template-columns:1fr 1fr}#web-interaction-gallery .wi-stage{min-height:235px}}
 @media(max-width:380px){#web-interaction-gallery .wi-catalogue{grid-template-columns:1fr}#web-interaction-gallery .wi-top{padding-inline-end:0}}
@@ -123,22 +142,28 @@ const effects=[
 ['H06','非对称色块','hover','移入左进，移出右退，不走原路。','asym-fill'],
 ['H07','非对称下划线','hover','下划线从左展开，离开时向右收起。','asym-line'],
 ['H08','方向感知悬停','hover','根据进入和离开的边缘决定遮罩方向。','direction'],
-['H09','具体坐标揭示','hover','教学扩展：以进入位置作为圆形揭示中心。','point']
+['H09','具体坐标揭示','hover','教学扩展：以进入位置作为圆形揭示中心。','point'],
+['P01','弹簧动画','physics','弹簧力与阻尼决定运动；默认欠阻尼，越过目标后逐渐停稳。','spring'],
+['P02','阻尼比＝1','physics','默认临界阻尼，从静止释放不来回振荡；可调低或调高对比。','critical'],
+['P03','继承松手速度','physics','拖动后松手，保留释放瞬间的速度；勾选项可对比归零。','release'],
+['P04','边界回弹组合','physics','临界阻尼＋松手速度＋边界碰撞；反弹来自独立的边界规则。','boundary']
 ].map(([id,name,group,summary,kind])=>({id,name,group,summary,kind}));
-const groups={load:'加载与转场',scroll:'滚动交互',hover:'指针与悬停'};
+const groups={load:'加载与转场',scroll:'滚动交互',hover:'指针与悬停',physics:'弹簧与拖拽'};
 const stage=$('[data-stage]'),slider=$('#wi-scroll'),status=$('[data-status]'),reduce=$('[data-reduce]');
+const damping=$('#wi-damping'),velocity=$('#wi-velocity'),carry=$('[data-carry]');
 let selected=effects[0],progress=0,prev=0,done=false,inside=false,lastDirection='left',cycle=0,raf=0,timers=[],animations=[],smoothPos=0;
+let physics=null;
 const mq=matchMedia('(prefers-reduced-motion: reduce)');reduce.checked=mq.matches;
 const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
 const message=s=>{status.textContent=s};
-const save=()=>{if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{effectId:selected.id,effectName:selected.name},privateContent:{progress,reduce:reduce.checked}}).catch(()=>{});};
+const save=()=>{if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{effectId:selected.id,effectName:selected.name,...(selected.group==='physics'?{dampingRatio:Number(damping.value),releaseVelocity:Number(velocity.value),carryVelocity:carry.checked}:{})},privateContent:{progress,reduce:reduce.checked}}).catch(()=>{});};
 const animate=(el,frames,options={})=>{
  if(!el)return null;
  const arr=Array.isArray(frames)?frames:[frames];
  if(reduce.checked){const last=arr[arr.length-1];for(const key of Object.keys(last))if(!['offset','easing','composite'].includes(key))el.style[key]=last[key];return null;}
  const a=el.animate(frames,{duration:650,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards',...options});animations.push(a);return a;
 };
-function stop(){cycle++;cancelAnimationFrame(raf);raf=0;timers.forEach(clearTimeout);timers=[];animations.forEach(a=>a.cancel());animations=[];}
+function stop(){cycle++;cancelAnimationFrame(raf);raf=0;timers.forEach(clearTimeout);timers=[];animations.forEach(a=>a.cancel());animations=[];if(physics){physics.observer?.disconnect();physics.drag=null;physics=null;}}
 function later(fn,ms){const c=cycle;timers.push(setTimeout(()=>{if(c===cycle)fn()},reduce.checked?0:ms));}
 const mark=(label='A',extra='')=>'<div class="wi-mark '+extra+'">'+label+'</div>';
 const page=(label,extra='')=>'<div class="wi-page '+extra+'">'+mark(label)+'<div class="wi-line"></div></div>';
@@ -162,6 +187,8 @@ function build(){
   else stage.innerHTML='<div class="wi-scene">'+landscape()+(k.startsWith('parallax')?'<div class="wi-front">前景</div>':'')+(k==='frames'?'<span class="wi-frame-label"></span>':'')+'</div>';
   if(['once','reset-up','reset-both'].includes(k)){const m=stage.querySelector('.wi-mark');m.style.opacity='0';m.style.transform='translateY(35px)';}
   applyProgress(progress);
+ }else if(selected.group==='physics'){
+  buildPhysics();
  }else{
   const line=['asym-line','event-line'].includes(k);
   stage.innerHTML='<div class="wi-hover-target cursor-interaction" role="img" aria-label="将指针移入此区域查看悬停效果"><span class="wi-hover-label">移入这里</span>'+(line?'<div class="wi-under"></div>':'<div class="wi-hover-layer"></div>')+'</div>';
@@ -174,6 +201,7 @@ function build(){
  }
 }
 function play(){
+ if(selected.group==='physics'){build();runPhysics(selected.kind==='release'||selected.kind==='boundary'?Number(velocity.value):0);return;}
  if(selected.group!=='load')return;
  build();const k=selected.kind,pages=stage.querySelectorAll('.wi-page'),a=pages[0],b=pages[1];
  if(k==='hero'){stage.querySelectorAll('[data-part],.wi-mark').forEach((el,i)=>animate(el,[{opacity:0,transform:'translateY(28px)'},{opacity:1,transform:'translateY(0)'}],{delay:reduce.checked?0:i*160}));message('标题 → 主体 → 说明依次入场');}
@@ -181,6 +209,92 @@ function play(){
  else if(k==='mask'){const cover=document.createElement('div');cover.className='wi-mask';cover.textContent='切换中';stage.appendChild(cover);animate(cover,[{transform:'translateY(100%)'},{transform:'translateY(0)'},{transform:'translateY(0)',offset:.65},{transform:'translateY(-100%)'}],{duration:1400});later(()=>{b.style.opacity='1'},600);later(()=>{cover.remove();message('已切换到页面 B')},1450);}
  else if(k==='overlap'){b.style.opacity='1';animate(a,[{transform:'translateX(0)',opacity:1},{transform:'translateX(-40%)',opacity:0}],{duration:1000});animate(b,[{transform:'translateX(100%)',opacity:1},{transform:'translateX(0)',opacity:1}],{duration:1000});message('两页在过渡中同时出现');}
  else if(k==='shared'){a.style.opacity='0';b.style.opacity='1';const m=b.querySelector('.wi-mark');m.textContent='共享封面';animate(m,[{transform:'translateX(-80px) scale(.55)',borderRadius:'24px'},{transform:'translateX(0) scale(1.65)',borderRadius:'4px'}],{duration:1200});animate(b.querySelector('.wi-line'),[{opacity:0},{opacity:.25}],{delay:reduce.checked?0:700});message('封面从缩略状态连续变为详情主图');}
+}
+/* physics-model:start */
+function springStep(x,v,target,zeta,dt,omega=8){
+ const y=x-target,a=zeta*omega;
+ let nextY,nextV;
+ if(Math.abs(zeta-1)<1e-8){
+  const b=v+omega*y,e=Math.exp(-omega*dt);
+  nextY=(y+b*dt)*e;nextV=(v-omega*b*dt)*e;
+ }else if(zeta<1){
+  const w=omega*Math.sqrt(1-zeta*zeta),b=(v+a*y)/w,e=Math.exp(-a*dt),c=Math.cos(w*dt),s=Math.sin(w*dt);
+  nextY=e*(y*c+b*s);nextV=e*((-a*y+w*b)*c+(-a*b-w*y)*s);
+ }else{
+  const d=omega*Math.sqrt(zeta*zeta-1),r1=-a+d,r2=-a-d,b=(v-r2*y)/(r1-r2),c=y-b;
+  nextY=b*Math.exp(r1*dt)+c*Math.exp(r2*dt);nextV=r1*b*Math.exp(r1*dt)+r2*c*Math.exp(r2*dt);
+ }
+ return {x:target+nextY,v:nextV};
+}
+function advanceSpring(p,dt){
+ const steps=Math.max(1,Math.ceil(dt*240)),h=dt/steps;
+ for(let i=0;i<steps;i++){
+  const next=springStep(p.x,p.v,p.target,p.zeta,h);p.x=next.x;p.v=next.v;
+  if(p.boundary&&p.x<0){p.x=0;if(p.v<0){p.v=-p.v*.55;p.bounces++;}}
+  if(p.boundary&&p.x>1){p.x=1;if(p.v>0){p.v=-p.v*.55;p.bounces++;}}
+ }
+ return p;
+}
+function sampledVelocity(samples,now){
+ const recent=samples.filter(s=>now-s.t<=120);
+ if(recent.length<2)return 0;
+ const first=recent[0],last=recent[recent.length-1],dt=(last.t-first.t)/1000;
+ return dt>.008?Math.max(-4,Math.min(4,(last.x-first.x)/dt)):0;
+}
+/* physics-model:end */
+function physicsLabels(){
+ $('[data-damping-value]').textContent=Number(damping.value).toFixed(2)+(Number(damping.value)===1?' · 临界阻尼':'');
+ $('[data-velocity-value]').textContent=(Number(velocity.value)>=0?'+':'')+Number(velocity.value).toFixed(2)+' 轨道/秒';
+ if(selected.group==='physics')$('#wi-brief').value='实现 '+selected.id+' '+selected.name+'：为目标元素使用物理弹簧动画。阻尼比 ζ='+Number(damping.value).toFixed(2)+'；'+(['release','boundary'].includes(selected.kind)?(carry.checked?'继承真实松手速度作为初速度':'松手后初速度归零'):'初速度为0')+'。'+(selected.kind==='boundary'?'到左右边界时单独反转速度并衰减（预览恢复系数0.55），随后回到目标位置。':'说明目标位置与结束阈值。')+' 阻尼比不等于动画库的 damping 参数；若使用质量m、刚度k与阻尼系数c，按 c=2ζ√(km) 换算。提供键盘/触摸和减少动态效果的等效操作，允许途中重新抓取。具体参数为可调整的实施假设。';
+}
+function paintPhysics(){
+ const p=physics;if(!p)return;
+ p.carrier.style.transform='translate('+p.x*p.span+'px,-50%)';
+ p.marker.style.left=(p.target*p.span+p.carrier.offsetWidth/2)+'px';
+ p.carrier.dataset.position=p.x.toFixed(5);
+ p.readout.textContent='松手速度 '+p.releaseV.toFixed(2)+' 轨道/秒'+(p.boundary?' · 边界回弹 '+p.bounces+' 次':'');
+}
+function runPhysics(v,resume=false){
+ const p=physics;if(!p)return;cancelAnimationFrame(raf);
+ if(!resume){p.v=['release','boundary'].includes(selected.kind)&&carry.checked?clamp(v,-4,4):0;p.releaseV=p.v;p.elapsed=0;p.bounces=0;}
+ p.drag=null;p.running=true;p.lastTime=null;p.zeta=Number(damping.value);
+ if(reduce.checked){p.x=p.target;p.v=0;p.running=false;paintPhysics();message('减少动态效果：直接显示终态');return;}
+ message(p.boundary?'弹簧运动中；碰到边界时独立回弹':'弹簧运动中；可重新抓取方块');
+ const tick=time=>{
+  if(physics!==p||p.drag)return;
+  const dt=p.lastTime===null?0:Math.min(.05,(time-p.lastTime)/1000);p.lastTime=time;p.elapsed+=dt;
+  advanceSpring(p,dt);paintPhysics();
+  if((Math.abs(p.x-p.target)<.001&&Math.abs(p.v)<.01)||p.elapsed>8){
+   p.x=p.target;p.v=0;p.running=false;raf=0;paintPhysics();message('已停稳'+(p.boundary?' · 边界回弹 '+p.bounces+' 次':''));
+  }else raf=requestAnimationFrame(tick);
+ };raf=requestAnimationFrame(tick);
+}
+function buildPhysics(){
+ const boundary=selected.kind==='boundary',release=selected.kind==='release';
+ stage.innerHTML='<div class="wi-spring-rail"><div class="wi-spring-line"></div>'+(boundary?'<div class="wi-spring-edge"></div><div class="wi-spring-edge right"></div>':'')+'<span class="wi-spring-target text-small">目标</span><div class="wi-spring-carrier"><button class="btn btn-primary" type="button" aria-label="可拖动方块；左右键移动，回车或空格释放">拖动</button></div></div><div class="wi-physics-readout text-small"></div>';
+ const rail=stage.querySelector('.wi-spring-rail'),carrier=stage.querySelector('.wi-spring-carrier'),handle=carrier.querySelector('button');
+ const p=physics={x:boundary?(Number(velocity.value)<0?.04:.96):.15,v:0,target:(boundary||release) ? .5 : .6,zeta:Number(damping.value),boundary,bounces:0,releaseV:0,span:Math.max(1,rail.clientWidth-carrier.offsetWidth),carrier,marker:stage.querySelector('.wi-spring-target'),readout:stage.querySelector('.wi-physics-readout'),drag:null,running:false,elapsed:0};
+ p.observer=new ResizeObserver(()=>{if(physics===p){p.span=Math.max(1,rail.clientWidth-carrier.offsetWidth);paintPhysics();}});p.observer.observe(rail);
+ const finish=(e,cancelled=false)=>{
+  if(physics!==p||p.drag?.id!==e.pointerId)return;
+  const now=e.timeStamp;p.drag.samples.push({x:p.x,t:now});const v=cancelled?0:sampledVelocity(p.drag.samples,now);p.drag=null;
+  if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId);
+  runPhysics(v);if(cancelled)message('拖动已取消：以零初速度归位');
+ };
+ handle.addEventListener('pointerdown',e=>{
+  if(!e.isPrimary||e.button!==0)return;cancelAnimationFrame(raf);p.running=false;p.v=0;
+  p.drag={id:e.pointerId,startX:e.clientX,startValue:p.x,samples:[{x:p.x,t:e.timeStamp}]};handle.setPointerCapture(e.pointerId);message('拖动中：松手后继续运动');
+ });
+ handle.addEventListener('pointermove',e=>{
+  if(physics!==p||p.drag?.id!==e.pointerId)return;
+  p.x=clamp(p.drag.startValue+(e.clientX-p.drag.startX)/p.span);p.drag.samples.push({x:p.x,t:e.timeStamp});p.drag.samples=p.drag.samples.filter(s=>e.timeStamp-s.t<=120);paintPhysics();
+ });
+ handle.addEventListener('pointerup',e=>finish(e));handle.addEventListener('pointercancel',e=>finish(e,true));handle.addEventListener('lostpointercapture',e=>finish(e,true));
+ handle.addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();cancelAnimationFrame(raf);p.running=false;p.v=0;p.x=e.key==='Home'?0:e.key==='End'?1:clamp(p.x+(e.key==='ArrowLeft'?-.08:.08));paintPhysics();message('键盘移动：按回车或空格释放');}
+  else if(e.key==='Enter'||e.key===' '){e.preventDefault();runPhysics(Number(velocity.value));}
+ });
+ paintPhysics();physicsLabels();message('拖动方块后松手；也可播放演示或使用键盘');
 }
 function applyProgress(n){
  const old=progress;progress=clamp(Number(n),0,100);slider.value=progress;$('[data-progress]').textContent=Math.round(progress)+'%';
@@ -245,7 +359,9 @@ function select(id,remember=true){
  selected=effects.find(e=>e.id===id)||effects[0];progress=0;slider.value=0;$('[data-progress]').textContent='0%';
  $('[data-name]').textContent=selected.id+' · '+selected.name;$('[data-summary]').textContent=selected.summary;
  root.querySelectorAll('[data-effect-id]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.effectId===selected.id)));
- $('[data-play]').hidden=selected.group!=='load';$('[data-enter]').hidden=selected.group!=='hover';$('[data-leave]').hidden=selected.group!=='hover';
+ $('[data-play]').hidden=!['load','physics'].includes(selected.group);$('[data-enter]').hidden=selected.group!=='hover';$('[data-leave]').hidden=selected.group!=='hover';
+ $('[data-physics-controls]').hidden=selected.group!=='physics';$('[data-velocity-controls]').hidden=!['release','boundary'].includes(selected.kind);
+ if(selected.group==='physics'){damping.value=selected.kind==='spring'?.35:1;velocity.value=selected.kind==='boundary'?4:3;carry.checked=true;}
  $('[data-scroll-controls]').hidden=selected.group!=='scroll';$('[data-direction-controls]').hidden=selected.kind!=='direction';
  $('#wi-brief').value='我想使用 '+selected.name+'（'+selected.id+'）。预期行为：'+selected.summary+' 请结合我的目标页面明确对象、开始条件、初态与终态、离开/重入规则、触摸与键盘替代方式，再按我的要求整理或实现。';
  $('[data-use-status]').textContent='';build();if(selected.group==='load')message('点击播放观察变化');if(remember)save();
@@ -259,11 +375,14 @@ $('[data-enter]').addEventListener('click',()=>hover(true));
 $('[data-leave]').addEventListener('click',()=>hover(false));
 root.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{lastDirection=b.dataset.direction;hover(!inside);}));
 slider.addEventListener('input',()=>applyProgress(slider.value));slider.addEventListener('change',save);
+damping.addEventListener('input',()=>{if(physics)physics.zeta=Number(damping.value);physicsLabels();});damping.addEventListener('change',save);
+velocity.addEventListener('input',physicsLabels);velocity.addEventListener('change',save);carry.addEventListener('change',()=>{physicsLabels();save();});
 reduce.addEventListener('change',()=>{const p=progress;build();if(selected.group==='scroll')applyProgress(p);save();});
 $('[data-use]').addEventListener('click',async()=>{if(window.openai?.sendFollowUpMessage){await window.openai.sendFollowUpMessage({prompt:$('#wi-brief').value,title:'继续使用 '+selected.name});}else{$('#wi-brief').focus();$('#wi-brief').select();$('[data-use-status]').textContent='需求已选中，可复制回聊天继续';}});
-function restore(state){if(!state)return;const id=state.modelContent?.effectId,pc=state.privateContent;if(typeof pc?.reduce==='boolean')reduce.checked=pc.reduce;if(id)select(id,false);if(selected.group==='scroll'&&typeof pc?.progress==='number')applyProgress(pc.progress);}
-select('L01',false);restore(window.openai?.widgetState);
+function restore(state){if(!state)return;const mc=state.modelContent,pc=state.privateContent;if(typeof pc?.reduce==='boolean')reduce.checked=pc.reduce;if(mc?.effectId)select(mc.effectId,false);if(selected.group==='scroll'&&typeof pc?.progress==='number')applyProgress(pc.progress);if(selected.group==='physics'){if(Number.isFinite(mc?.dampingRatio))damping.value=clamp(mc.dampingRatio,.2,2);if(Number.isFinite(mc?.releaseVelocity))velocity.value=clamp(mc.releaseVelocity,-4,4);if(typeof mc?.carryVelocity==='boolean')carry.checked=mc.carryVelocity;physics.zeta=Number(damping.value);physicsLabels();}}
+$('[data-count]').textContent='视频与截图参考 · '+effects.length+' 项原理演示';
+select(root.dataset.initialEffect||'L01',false);restore(window.openai?.widgetState);
 window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
-document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else if(selected.kind==='smooth'){applyProgress(progress);}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;if(physics?.drag){physics.drag=null;physics.v=0;physics.running=true;}}else if(selected.kind==='smooth'){applyProgress(progress);}else if(physics?.running){runPhysics(physics.v,true);}});
 })();
 </script>
