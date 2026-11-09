@@ -1,0 +1,4 @@
+interface:
+  display_name: "网页交互描述"
+  short_description: "先展示全部交互效果与可操作预览，再把想法转成准确术语、交互需求与实现"
+  default_prompt: "使用 $web-interaction-spec，先给我看全部效果目录和可操作预览，再将我选中的网页动效整理成清楚的交互需求；如果我要求实现，就在目标项目中完成。"
