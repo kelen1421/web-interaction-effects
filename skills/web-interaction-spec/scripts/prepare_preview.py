@@ -2,11 +2,16 @@
 """Materialize the skill's canonical preview without network dependencies."""
 import argparse
 import json
+import re
 from pathlib import Path
 
-def prepare(output_dir: Path, fragment_dir: Path) -> dict:
+def prepare(output_dir: Path, fragment_dir: Path, initial_effect: str = "L01") -> dict:
     skill = Path(__file__).resolve().parents[1]
     fragment = (skill / "assets" / "preview.html").read_text(encoding="utf-8")
+    effects = re.findall(r"^\['([A-Z]\d{2})',", fragment, re.MULTILINE)
+    if initial_effect not in effects:
+        raise ValueError(f"Unknown effect: {initial_effect}")
+    fragment = fragment.replace('data-initial-effect="L01"', f'data-initial-effect="{initial_effect}"', 1)
     output_dir.mkdir(parents=True, exist_ok=True)
     fragment_dir.mkdir(parents=True, exist_ok=True)
     fragment_path = fragment_dir / "web-interactions-preview.html"
@@ -21,11 +26,12 @@ def prepare(output_dir: Path, fragment_dir: Path) -> dict:
     """
     document = "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>网页交互效果预览</title><style>" + css + "</style></head><body><main>" + fragment + "</main></body></html>"
     page_path.write_text(document, encoding="utf-8")
-    return {"fragment": str(fragment_path.resolve()), "standalone": str(page_path.resolve()), "effects": 28}
+    return {"fragment": str(fragment_path.resolve()), "standalone": str(page_path.resolve()), "effects": len(effects)}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--fragment-dir", type=Path, required=True)
+    parser.add_argument("--initial-effect", default="L01")
     args = parser.parse_args()
-    print(json.dumps(prepare(args.output_dir, args.fragment_dir), ensure_ascii=False))
+    print(json.dumps(prepare(args.output_dir, args.fragment_dir, args.initial_effect), ensure_ascii=False))
