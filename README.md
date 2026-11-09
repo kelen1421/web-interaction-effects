@@ -1,16 +1,19 @@
 # 网页交互效果
 
+**[打开全部 32 项交互演示 →](https://kelen1421.github.io/web-interaction-effects/)**　·　[试试边界回弹](https://kelen1421.github.io/web-interaction-effects/#P04)　·　[安装 skill](#安装与调用)
+
 一个把网页动效想法整理为准确术语、交互需求和实现检查要点的 Codex skill。**每次调用默认先展示全部已收录效果与可操作预览**，再按需求解释、选型、实现或评审。
 
 当前收录 **32 项原理演示**：5 项加载与转场、14 项滚动交互、9 项悬停交互、4 项弹簧与拖拽。预览可重播、拖动模拟进度、模拟指针移入移出，也可真实拖动方块、调整阻尼比与松手速度，并支持减少动态效果。
 
 ## 查看预览与笔记
 
-- [完整交互预览](preview/网页交互效果预览.html)：下载仓库后用浏览器打开，可离线操作。
+- [在线交互预览](https://kelen1421.github.io/web-interaction-effects/)：无需下载，打开即可操作全部 32 项效果。
+- [离线交互预览](preview/网页交互效果预览.html)：下载对应文件后用浏览器打开，可离线操作。
 - [两期视频详细笔记](preview/两期网页交互视频笔记.html)：包含时间定位、术语解释、需求示例与无法核实的信息。
 - [技能说明](skills/web-interaction-spec/SKILL.md)：默认工作流程与实施范围。
 
-GitHub 文件页展示的是源码；下载对应 HTML 后才能直接操作预览。本仓库尚未部署为在线网站。
+在线版本通过 GitHub Pages 发布。每项效果都有可分享链接，例如 `#P04`；展开需求描述后可一键复制。GitHub 内的 HTML 文件页展示源码，离线使用时需先下载。
 
 ## 安装与调用
 
@@ -53,6 +56,8 @@ python3 skills/web-interaction-spec/scripts/prepare_preview.py \
 
 生成器仅依赖 Python 标准库；预览无外部字体、图片、脚本或网络请求依赖。
 可追加 `--initial-effect P04`，让本次预览从边界回弹开始，完整目录仍保持可见。
+
+更新独立预览后，运行 `python3 build_pages.py` 同步公开网页入口 `index.html`。GitHub Pages 使用 `main` 分支根目录；提交更新后自动发布。网页保留完整目录，新增导航、需求复制和效果链接；原始教学预览保持独立。
 
 ## 来源与边界
 
