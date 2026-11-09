@@ -1,0 +1,274 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>网页交互效果预览</title><style>
+    :root{color-scheme:light dark;--font-size-base:14px;--background:#fff;--foreground:#202724;--card:#f2f5f3;--card-foreground:#202724;--primary:#243f35;--primary-foreground:#fff;--secondary:#e3eae6;--secondary-foreground:#263b32;--muted:#eef2ef;--muted-foreground:#52665a;--border:#c9d5ce;--blue:#227b66;--viz-series-1:#227b66;--accent:#e7f0eb;--accent-foreground:#20392c;--ring:#227b66}
+    @media(prefers-color-scheme:dark){:root{--background:#181d1a;--foreground:#edf4ee;--card:#232c27;--card-foreground:#edf4ee;--primary:#d9eee0;--primary-foreground:#18271c;--secondary:#34473b;--secondary-foreground:#edf4ee;--muted:#23322a;--muted-foreground:#b4c7ba;--border:#4c6254;--blue:#71c4a6;--viz-series-1:#71c4a6;--accent:#334a3b;--accent-foreground:#e5f3e9;--ring:#71c4a6}}
+    *{box-sizing:border-box}body{margin:0;background:var(--background);color:var(--foreground);font:400 14px/1.5 system-ui,-apple-system,'PingFang SC',sans-serif}main{max-width:1040px;margin:32px auto;padding:0 24px}h1,h2,h3,p{margin:0;font-weight:500}h2{font-size:20px}h3{font-size:15px}.text-small{font-size:12px}.text-muted{color:var(--muted-foreground)}.tabular-nums{font-variant-numeric:tabular-nums}.card{padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--card-foreground)}.btn{font:inherit;padding:8px 12px;min-height:38px;background:transparent;color:var(--foreground);border:1px solid var(--border);border-radius:7px;text-align:left;cursor:pointer;white-space:normal;overflow-wrap:anywhere}.btn:hover{background:var(--accent);color:var(--accent-foreground)}.btn-primary,.btn[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}.btn:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--ring);outline-offset:3px}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.form-check{display:flex;align-items:center;gap:8px}.form-check-input{accent-color:var(--primary)}.form-label{display:block;margin-bottom:6px}.form-range{width:100%;accent-color:var(--primary)}.form-control{font:inherit;width:100%;border:1px solid var(--border);background:var(--background);color:var(--foreground);border-radius:6px;padding:10px}.cursor-interaction{cursor:pointer}summary{cursor:pointer}details>*+*{margin-top:10px}@media(pointer:coarse){.btn{min-height:44px}.form-control{font-size:16px}}@media(max-width:480px){main{margin:16px auto;padding:0 12px}}
+    </style></head><body><main><div id="web-interaction-gallery">
+  <div class="wi-top">
+    <h2>网页交互效果预览</h2>
+    <span class="text-small text-muted">两期内容 · 28 项原理演示</span>
+  </div>
+  <div class="wi-selected" aria-live="polite">
+    <h3 data-name></h3>
+    <span class="text-small" data-summary></span>
+  </div>
+  <div class="card wi-stage" data-stage aria-label="所选交互效果的演示舞台"></div>
+  <div class="wi-status text-small" data-status aria-live="polite"></div>
+  <div class="viz-controls">
+    <button type="button" class="btn btn-primary" data-play>播放演示</button>
+    <button type="button" class="btn" data-enter hidden>模拟移入</button>
+    <button type="button" class="btn" data-leave hidden>模拟移出</button>
+    <label class="form-check">
+      <input class="form-check-input" type="checkbox" data-reduce>
+      <span class="form-check-label">减少动态效果</span>
+    </label>
+  </div>
+  <div data-scroll-controls hidden>
+    <label class="form-label" for="wi-scroll">滚动进度（模拟） <output class="tabular-nums" data-progress>0%</output></label>
+    <input class="form-range" id="wi-scroll" type="range" min="0" max="100" value="0" step="1">
+  </div>
+  <div class="viz-controls" data-direction-controls hidden aria-label="模拟指针方向">
+    <button class="btn" type="button" data-direction="left">从左侧</button>
+    <button class="btn" type="button" data-direction="right">从右侧</button>
+    <button class="btn" type="button" data-direction="top">从上方</button>
+    <button class="btn" type="button" data-direction="bottom">从下方</button>
+  </div>
+  <div class="wi-catalogue" data-catalogue aria-label="全部交互效果"></div>
+  <details class="wi-details">
+    <summary>查看所选效果的需求描述</summary>
+    <label class="form-label" for="wi-brief">可复制后补充你的对象、参数与页面</label>
+    <textarea id="wi-brief" class="form-control" rows="4" readonly></textarea>
+    <button type="button" class="btn" data-use>按这个效果继续</button>
+    <span class="text-small" data-use-status aria-live="polite"></span>
+  </details>
+  <div class="text-small text-muted wi-foot">自制教学演示；滚动使用进度模拟，帧序列和三维使用几何示意。原案例的样式、参数与实现不在复刻范围内。</div>
+</div>
+<style>
+#web-interaction-gallery{color:var(--foreground);display:grid;gap:calc(var(--font-size-base)*1)}
+#web-interaction-gallery .wi-top,#web-interaction-gallery .wi-selected{display:flex;flex-wrap:wrap;gap:calc(var(--font-size-base)*.5);align-items:baseline}
+#web-interaction-gallery .wi-top{padding-inline-end:90px}
+#web-interaction-gallery .wi-selected{flex-direction:column}
+#web-interaction-gallery .wi-stage{position:relative;min-height:270px;overflow:hidden;isolation:isolate;display:grid;place-items:center;touch-action:pan-y}
+#web-interaction-gallery .wi-stage *{box-sizing:border-box}
+#web-interaction-gallery .wi-board{position:absolute;inset:20px;display:flex;align-items:center;justify-content:center;gap:16px;perspective:700px}
+#web-interaction-gallery .wi-page{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;background:var(--card);color:var(--card-foreground)}
+#web-interaction-gallery .wi-page.alt{background:var(--secondary);color:var(--secondary-foreground)}
+#web-interaction-gallery .wi-mark{width:96px;height:96px;background:var(--viz-series-1,var(--blue));border-radius:24px;display:grid;place-items:center;color:var(--background);will-change:transform,opacity}
+#web-interaction-gallery .wi-mark.small{width:48px;height:48px;border-radius:12px}
+#web-interaction-gallery .wi-line{height:5px;width:130px;background:var(--foreground);opacity:.25}
+#web-interaction-gallery .wi-mask{position:absolute;inset:0;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;z-index:4}
+#web-interaction-gallery .wi-hero{position:absolute;inset:25px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px}
+#web-interaction-gallery .wi-text{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#web-interaction-gallery .wi-word{display:inline-block;background:var(--secondary);padding:12px;color:var(--secondary-foreground)}
+#web-interaction-gallery .wi-track{display:flex;gap:18px;position:absolute;left:24px;top:55px;width:260%}
+#web-interaction-gallery .wi-panel{flex:1;min-width:150px;height:140px;background:var(--secondary);color:var(--secondary-foreground);display:grid;place-items:center}
+#web-interaction-gallery .wi-panel:nth-child(2){background:var(--primary);color:var(--primary-foreground)}
+#web-interaction-gallery .wi-scene{position:absolute;inset:0;perspective:600px;overflow:hidden}
+#web-interaction-gallery .wi-land{position:absolute;inset:28px;background:var(--secondary);overflow:hidden;color:var(--secondary-foreground)}
+#web-interaction-gallery .wi-orb{position:absolute;width:72px;height:72px;border-radius:50%;background:var(--viz-series-1,var(--blue));left:18%;top:24%}
+#web-interaction-gallery .wi-mountain{position:absolute;width:180px;height:180px;background:var(--foreground);opacity:.2;transform:rotate(45deg);left:36%;top:50%}
+#web-interaction-gallery .wi-horizon{position:absolute;left:0;right:0;bottom:0;height:30%;background:var(--foreground);opacity:.08}
+#web-interaction-gallery .wi-layer-label{position:absolute;inset:14px auto auto 14px}
+#web-interaction-gallery .wi-front{position:absolute;width:90px;height:110px;left:55%;top:48%;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center}
+#web-interaction-gallery .wi-cube{width:88px;height:88px;position:relative;transform-style:preserve-3d}
+#web-interaction-gallery .wi-face{position:absolute;inset:0;background:color-mix(in srgb,var(--viz-series-1,var(--blue)) 70%,var(--card));border:1px solid var(--foreground);opacity:.88;display:grid;place-items:center}
+#web-interaction-gallery .wi-face.f{transform:translateZ(44px)}
+#web-interaction-gallery .wi-face.b{transform:rotateY(180deg) translateZ(44px)}
+#web-interaction-gallery .wi-face.r{transform:rotateY(90deg) translateZ(44px)}
+#web-interaction-gallery .wi-face.l{transform:rotateY(-90deg) translateZ(44px)}
+#web-interaction-gallery .wi-face.t{transform:rotateX(90deg) translateZ(44px)}
+#web-interaction-gallery .wi-face.d{transform:rotateX(-90deg) translateZ(44px)}
+#web-interaction-gallery .wi-hover-target{position:relative;width:min(72%,310px);height:132px;overflow:hidden;display:grid;place-items:center;background:var(--secondary);color:var(--secondary-foreground)}
+#web-interaction-gallery .wi-hover-layer{position:absolute;inset:0;display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);pointer-events:none}
+#web-interaction-gallery .wi-hover-label{position:relative;z-index:2;pointer-events:none}
+#web-interaction-gallery .wi-under{position:absolute;height:4px;bottom:32px;left:20%;width:60%;background:var(--viz-series-1,var(--blue));transform:scaleX(0);transform-origin:left}
+#web-interaction-gallery .wi-particle{position:absolute;width:12px;height:12px;border-radius:50%;left:50%;top:50%;background:var(--viz-series-1,var(--blue));pointer-events:none}
+#web-interaction-gallery .wi-smooth-row{width:85%;height:55px;position:relative;background:var(--secondary)}
+#web-interaction-gallery .wi-smooth-dot{position:absolute;top:9px;left:0;height:37px;width:37px;border-radius:50%;background:var(--viz-series-1,var(--blue))}
+#web-interaction-gallery .wi-smooth-ghost{position:absolute;top:8px;width:38px;height:38px;border-radius:50%;border:1px dashed var(--foreground);opacity:.45}
+#web-interaction-gallery .wi-frame-label{position:absolute;bottom:16px;left:20px}
+#web-interaction-gallery .wi-catalogue{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--font-size-base)*1)}
+#web-interaction-gallery .wi-group{display:flex;flex-direction:column;gap:calc(var(--font-size-base)*.5);min-width:0}
+#web-interaction-gallery .wi-status{min-height:1.5em}
+#web-interaction-gallery .wi-details{display:grid;gap:calc(var(--font-size-base)*.5)}
+#web-interaction-gallery [hidden]{display:none!important}
+@media(max-width:580px){#web-interaction-gallery .wi-catalogue{grid-template-columns:1fr 1fr}#web-interaction-gallery .wi-stage{min-height:235px}}
+@media(max-width:380px){#web-interaction-gallery .wi-catalogue{grid-template-columns:1fr}#web-interaction-gallery .wi-top{padding-inline-end:0}}
+</style>
+<script>
+(()=>{
+const root=document.getElementById('web-interaction-gallery');
+if(!root)return;
+const $=s=>root.querySelector(s);
+const effects=[
+['L01','首次加载 Splash','load','首次进入的加载展示；进度仅作模拟。','splash'],
+['L02','遮罩式转场','load','先遮住旧页，再切换并揭开新页。','mask'],
+['L03','交叠式转场','load','旧页退出时，新页同时进入。','overlap'],
+['L04','共享元素转场','load','同一视觉对象在前后页面间改变位置与尺寸。','shared'],
+['L05','主视觉入场','load','主视觉区中的标题、主体与说明依次出现。','hero'],
+['S01','平滑滚动','scroll','虚线代表目标位置，实心点平滑追赶。','smooth'],
+['S02','单次滚动触发','scroll','进度达到25%时播放一次；来回拖动不重播。','once'],
+['S03','向上离开后重置','scroll','回到25%之前重置，再进入时重播。','reset-up'],
+['S04','双向离开后重置','scroll','退出25%—75%的区域就重置，重入时播放。','reset-both'],
+['S05','分段式滚动','scroll','进度跨越分段边界时切换整段内容。','segment'],
+['S06','滚动驱动文字','scroll','文字显现与缩放由进度连续控制。','text'],
+['S07','滚动驱动裁剪','scroll','裁剪窗口随滚动进度逐渐展开。','clip'],
+['S08','滚动驱动帧序列','scroll','模拟视频帧定位，使用60帧几何变化。','frames'],
+['S09','竖向滚动转横移','scroll','用一段进度驱动内容横向移动。','horizontal'],
+['S10','滚动驱动镜头','scroll','通过缩放与位移示意摄像机推进。','camera'],
+['S11','滚动驱动模型','scroll','以立方体旋转示意三维模型动画。','model'],
+['S12','滚动驱动场景','scroll','两组空间状态随进度切换，采用几何示意。','scene'],
+['S13','竖向视差','scroll','前景与背景以不同速率竖向移动。','parallax-v'],
+['S14','横向视差','scroll','前景与背景以不同速率横向移动。','parallax-h'],
+['H01','瞬时悬停切换','hover','移入和移出立即切换状态，不加补间。','instant'],
+['H02','对称悬停过渡','hover','移入放大，移出沿同一路径缩回。','symmetric'],
+['H03','悬停揭示内容','hover','进入时显示原本隐藏的项目信息。','reveal'],
+['H04','移入触发喷溅','hover','进入后独立播放；离开不会让粒子倒放。','burst'],
+['H05','移入移出各触发','hover','进入和离开分别启动一次下划线绘制。','event-line'],
+['H06','非对称色块','hover','移入左进，移出右退，不走原路。','asym-fill'],
+['H07','非对称下划线','hover','下划线从左展开，离开时向右收起。','asym-line'],
+['H08','方向感知悬停','hover','根据进入和离开的边缘决定遮罩方向。','direction'],
+['H09','具体坐标揭示','hover','教学扩展：以进入位置作为圆形揭示中心。','point']
+].map(([id,name,group,summary,kind])=>({id,name,group,summary,kind}));
+const groups={load:'加载与转场',scroll:'滚动交互',hover:'指针与悬停'};
+const stage=$('[data-stage]'),slider=$('#wi-scroll'),status=$('[data-status]'),reduce=$('[data-reduce]');
+let selected=effects[0],progress=0,prev=0,done=false,inside=false,lastDirection='left',cycle=0,raf=0,timers=[],animations=[],smoothPos=0;
+const mq=matchMedia('(prefers-reduced-motion: reduce)');reduce.checked=mq.matches;
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const message=s=>{status.textContent=s};
+const save=()=>{if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{effectId:selected.id,effectName:selected.name},privateContent:{progress,reduce:reduce.checked}}).catch(()=>{});};
+const animate=(el,frames,options={})=>{
+ if(!el)return null;
+ const arr=Array.isArray(frames)?frames:[frames];
+ if(reduce.checked){const last=arr[arr.length-1];for(const key of Object.keys(last))if(!['offset','easing','composite'].includes(key))el.style[key]=last[key];return null;}
+ const a=el.animate(frames,{duration:650,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards',...options});animations.push(a);return a;
+};
+function stop(){cycle++;cancelAnimationFrame(raf);raf=0;timers.forEach(clearTimeout);timers=[];animations.forEach(a=>a.cancel());animations=[];}
+function later(fn,ms){const c=cycle;timers.push(setTimeout(()=>{if(c===cycle)fn()},reduce.checked?0:ms));}
+const mark=(label='A',extra='')=>'<div class="wi-mark '+extra+'">'+label+'</div>';
+const page=(label,extra='')=>'<div class="wi-page '+extra+'">'+mark(label)+'<div class="wi-line"></div></div>';
+const landscape=()=>'<div class="wi-land"><span class="wi-layer-label">背景</span><div class="wi-orb"></div><div class="wi-mountain"></div><div class="wi-horizon"></div></div>';
+const cube=()=>'<div class="wi-cube">'+['f','b','r','l','t','d'].map((x,i)=>'<div class="wi-face '+x+'">'+(i+1)+'</div>').join('')+'</div>';
+function build(){
+ stop();done=false;inside=false;prev=0;smoothPos=0;
+ const k=selected.kind;
+ stage.dataset.effect=selected.id;
+ if(selected.group==='load'){
+  stage.innerHTML=k==='hero'?'<div class="wi-hero"><div data-part>让内容成为主角</div>'+mark('主视觉')+'<div data-part class="wi-line"></div></div>':page('A')+page('B','alt');
+  const pages=stage.querySelectorAll('.wi-page');if(pages[1])pages[1].style.opacity='0';
+ }else if(selected.group==='scroll'){
+  if(k==='smooth')stage.innerHTML='<div class="wi-smooth-row"><div class="wi-smooth-ghost"></div><div class="wi-smooth-dot"></div></div>';
+  else if(['once','reset-up','reset-both'].includes(k))stage.innerHTML='<div class="wi-board">'+mark('内容')+'</div>';
+  else if(k==='text')stage.innerHTML='<div class="wi-text">'+['滚动','控制','每一步'].map(x=>'<span class="wi-word">'+x+'</span>').join('')+'</div>';
+  else if(k==='horizontal')stage.innerHTML='<div class="wi-track">'+['作品 A','作品 B','作品 C','作品 D'].map(x=>'<div class="wi-panel">'+x+'</div>').join('')+'</div>';
+  else if(k==='model')stage.innerHTML='<div class="wi-board">'+cube()+'</div>';
+  else if(k==='scene')stage.innerHTML='<div class="wi-board" data-scene-a>'+cube()+'</div><div class="wi-board" data-scene-b>'+mark('场景 B')+'</div>';
+  else if(k==='segment')stage.innerHTML=page('章节 1');
+  else stage.innerHTML='<div class="wi-scene">'+landscape()+(k.startsWith('parallax')?'<div class="wi-front">前景</div>':'')+(k==='frames'?'<span class="wi-frame-label"></span>':'')+'</div>';
+  if(['once','reset-up','reset-both'].includes(k)){const m=stage.querySelector('.wi-mark');m.style.opacity='0';m.style.transform='translateY(35px)';}
+  applyProgress(progress);
+ }else{
+  const line=['asym-line','event-line'].includes(k);
+  stage.innerHTML='<div class="wi-hover-target cursor-interaction" role="img" aria-label="将指针移入此区域查看悬停效果"><span class="wi-hover-label">移入这里</span>'+(line?'<div class="wi-under"></div>':'<div class="wi-hover-layer"></div>')+'</div>';
+  const target=stage.querySelector('.wi-hover-target'),layer=stage.querySelector('.wi-hover-layer');
+  if(layer)layer.style.opacity='0';
+  target.addEventListener('pointerenter',e=>{if(e.pointerType==='touch')return;hover(true,e);});
+  target.addEventListener('pointerleave',e=>{if(e.pointerType==='touch')return;hover(false,e);});
+  target.addEventListener('pointercancel',()=>hover(false));
+  message('把指针移入目标，或使用模拟按钮');
+ }
+}
+function play(){
+ if(selected.group!=='load')return;
+ build();const k=selected.kind,pages=stage.querySelectorAll('.wi-page'),a=pages[0],b=pages[1];
+ if(k==='hero'){stage.querySelectorAll('[data-part],.wi-mark').forEach((el,i)=>animate(el,[{opacity:0,transform:'translateY(28px)'},{opacity:1,transform:'translateY(0)'}],{delay:reduce.checked?0:i*160}));message('标题 → 主体 → 说明依次入场');}
+ else if(k==='splash'){const cover=document.createElement('div');cover.className='wi-mask';cover.textContent='模拟加载';stage.appendChild(cover);animate(cover,[{opacity:1},{opacity:0}],{delay:reduce.checked?0:700});later(()=>{cover.remove();message('模拟就绪，展示页面 A')},1400);}
+ else if(k==='mask'){const cover=document.createElement('div');cover.className='wi-mask';cover.textContent='切换中';stage.appendChild(cover);animate(cover,[{transform:'translateY(100%)'},{transform:'translateY(0)'},{transform:'translateY(0)',offset:.65},{transform:'translateY(-100%)'}],{duration:1400});later(()=>{b.style.opacity='1'},600);later(()=>{cover.remove();message('已切换到页面 B')},1450);}
+ else if(k==='overlap'){b.style.opacity='1';animate(a,[{transform:'translateX(0)',opacity:1},{transform:'translateX(-40%)',opacity:0}],{duration:1000});animate(b,[{transform:'translateX(100%)',opacity:1},{transform:'translateX(0)',opacity:1}],{duration:1000});message('两页在过渡中同时出现');}
+ else if(k==='shared'){a.style.opacity='0';b.style.opacity='1';const m=b.querySelector('.wi-mark');m.textContent='共享封面';animate(m,[{transform:'translateX(-80px) scale(.55)',borderRadius:'24px'},{transform:'translateX(0) scale(1.65)',borderRadius:'4px'}],{duration:1200});animate(b.querySelector('.wi-line'),[{opacity:0},{opacity:.25}],{delay:reduce.checked?0:700});message('封面从缩略状态连续变为详情主图');}
+}
+function applyProgress(n){
+ const old=progress;progress=clamp(Number(n),0,100);slider.value=progress;$('[data-progress]').textContent=Math.round(progress)+'%';
+ const p=progress/100,k=selected.kind;
+ if(selected.group!=='scroll')return;
+ if(['once','reset-up','reset-both'].includes(k)){
+  const m=stage.querySelector('.wi-mark'),active=p>=.25&&p<=.75;
+  if((k==='reset-up'&&p<.25)||(k==='reset-both'&&!active)){
+   animations.forEach(a=>a.cancel());animations=[];done=false;m.style.opacity='0';m.style.transform='translateY(35px)';message('区域之外：已重置');
+  }
+  if((k==='once'||k==='reset-up'?p>=.25:active)&&!done){done=true;animate(m,[{opacity:0,transform:'translateY(35px)'},{opacity:1,transform:'translateY(0)'}]);message('已触发：动画按时间播放');}
+  else if(done)message('已完成或播放中：当前保留终态');
+  else message('等待进入25%—75%的触发区域');
+ }else if(k==='smooth'){
+  cancelAnimationFrame(raf);const row=stage.querySelector('.wi-smooth-row'),dot=stage.querySelector('.wi-smooth-dot'),ghost=stage.querySelector('.wi-smooth-ghost'),span=Math.max(0,row.clientWidth-38),target=p*span;
+  ghost.style.left=target+'px';
+  const tick=()=>{smoothPos=reduce.checked?target:smoothPos+(target-smoothPos)*.12;dot.style.transform='translateX('+smoothPos+'px)';if(Math.abs(target-smoothPos)>.2)raf=requestAnimationFrame(tick);};tick();message('虚线为目标位置，实心点带缓动追赶');
+ }else if(k==='segment'){stage.querySelector('.wi-mark').textContent='章节 '+Math.min(4,Math.floor(p*4)+1);message('四段内容；跨越25%、50%、75%时切换');}
+ else if(k==='text'){stage.querySelectorAll('.wi-word').forEach((el,i)=>{const q=clamp(p*1.5-i*.22);el.style.opacity=q;el.style.transform='scale('+(reduce.checked?1:.55+.45*q)+')';});message('进度连续决定文字状态，反向拖动即可回退');}
+ else if(k==='horizontal'){const track=stage.querySelector('.wi-track'),dist=Math.max(0,track.scrollWidth-stage.clientWidth+48);track.style.transform='translateX('+(-p*dist)+'px)';message('模拟纵向输入，驱动横向内容');}
+ else if(k==='model'){stage.querySelector('.wi-cube').style.transform='rotateX('+(-20+p*60)+'deg) rotateY('+(p*300)+'deg)';message('几何模型示意，进度控制旋转');}
+ else if(k==='scene'){const a=stage.querySelector('[data-scene-a]'),b=stage.querySelector('[data-scene-b]');a.style.opacity=1-p;a.style.transform='translateX('+(-p*100)+'px) scale('+(1-p*.3)+')';b.style.opacity=p;b.style.transform='translateX('+((1-p)*100)+'px) scale('+(.7+p*.3)+')';message('两组空间状态连续交接');}
+ else{
+  const land=stage.querySelector('.wi-land');
+  if(k==='clip'){land.style.clipPath='inset('+((1-p)*40)+'% '+((1-p)*43)+'%)';message('裁剪区域从窄窗口逐步展开');}
+  else if(k==='frames'){const frame=Math.round(p*59);stage.querySelector('.wi-orb').style.transform='translateX('+(frame*2)+'px) rotate('+(frame*6)+'deg)';stage.querySelector('.wi-frame-label').textContent='模拟帧 '+String(frame+1).padStart(2,'0')+' / 60';message('离散帧进度示意，非真实视频素材');}
+  else if(k==='camera'){land.style.transform='scale('+(1+p*.6)+') translateX('+(-p*12)+'%)';message('缩放与位移示意镜头推进');}
+  else if(k.startsWith('parallax')){const axis=k.endsWith('-v')?'Y':'X',v=(p-.5);land.style.transform='translate'+axis+'('+(v*30)+'px)';stage.querySelector('.wi-front').style.transform='translate'+axis+'('+(v*100)+'px)';message('背景与前景移动速度不同');}
+ }
+ prev=old;
+}
+function edge(e){
+ if(!e)return lastDirection;
+ const r=stage.querySelector('.wi-hover-target').getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+ return [['left',Math.abs(x)/r.width],['right',Math.abs(r.width-x)/r.width],['top',Math.abs(y)/r.height],['bottom',Math.abs(r.height-y)/r.height]].sort((a,b)=>a[1]-b[1])[0][0];
+}
+const directionTransform=d=>({left:'translateX(-101%)',right:'translateX(101%)',top:'translateY(-101%)',bottom:'translateY(101%)'})[d];
+function hover(on,event){
+ if(selected.group!=='hover')return;
+ const k=selected.kind,target=stage.querySelector('.wi-hover-target'),layer=stage.querySelector('.wi-hover-layer'),line=stage.querySelector('.wi-under'),label=stage.querySelector('.wi-hover-label');
+ inside=on;const dir=edge(event),names={left:'左侧',right:'右侧',top:'上方',bottom:'下方'};
+ if(layer&&k!=='burst'){
+  label.textContent=on?(k==='reveal'?'项目说明 · 现在可以阅读':'查看项目'):'移入这里';
+  label.style.color=on?'var(--primary-foreground)':'var(--secondary-foreground)';
+ }
+ if(k==='burst'){
+  if(on){stage.querySelectorAll('.wi-particle').forEach(n=>n.remove());for(let i=0;i<12;i++){const el=document.createElement('span');el.className='wi-particle';el.setAttribute('aria-hidden','true');stage.appendChild(el);const a=i/12*Math.PI*2;animate(el,[{opacity:1,transform:'translate(0,0) scale(1)'},{opacity:0,transform:'translate('+(Math.cos(a)*100)+'px,'+(Math.sin(a)*90)+'px) scale(.1)'}],{duration:850});later(()=>el.remove(),900);}message('移入已触发；此时移出不会倒放');}
+  else message('已移出；正在播放的喷溅继续完成');return;
+ }
+ const startLayer=layer?{transform:getComputedStyle(layer).transform,opacity:getComputedStyle(layer).opacity}:null;
+ const startTarget={transform:getComputedStyle(target).transform};
+ animations.forEach(a=>a.cancel());animations=[];
+ if(k==='instant'){layer.style.opacity=on?'1':'0';message(on?'移入：立即切换':'移出：立即恢复');}
+ else if(k==='symmetric'){animate(target,[startTarget,{transform:on?'scale(1.08)':'scale(1)'}],{duration:350});animate(layer,[startLayer,{opacity:on?1:0,transform:'none'}],{duration:350});message(on?'沿同一路径放大':'沿同一路径缩回');}
+ else if(k==='reveal'){animate(layer,[startLayer,{opacity:on?1:0,transform:'none'}],{duration:300});message(on?'隐藏信息已揭示':'项目信息收起；实际产品需提供触摸/键盘入口');}
+ else if(k==='event-line'){line.style.transformOrigin='left';animate(line,[{transform:'scaleX(0)'},{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:900});message((on?'移入':'移出')+'事件各启动一次绘制');}
+ else if(k==='asym-line'){line.style.transformOrigin=on?'left':'right';animate(line,[{transform:on?'scaleX(0)':'scaleX(1)'},{transform:on?'scaleX(1)':'scaleX(0)'}],{duration:500});message(on?'从左向右展开':'向右收起，不原路返回');}
+ else if(k==='asym-fill'||k==='direction'){layer.style.opacity='1';const d=k==='direction'?dir:(on?'left':'right');animate(layer,[{transform:on?directionTransform(d):'translate(0,0)'},{transform:on?'translate(0,0)':directionTransform(d)}],{duration:500});message((on?'进入：':'离开：')+names[d]);}
+ else if(k==='point'){const r=target.getBoundingClientRect(),x=event?clamp((event.clientX-r.left)/r.width)*100:50,y=event?clamp((event.clientY-r.top)/r.height)*100:50;layer.style.opacity='1';const center=x+'% '+y+'%';animate(layer,[{clipPath:'circle('+(on?'0%':'150%')+' at '+center+')'},{clipPath:'circle('+(on?'150%':'0%')+' at '+center+')'}],{duration:600});message('教学扩展：以具体进入坐标为中心');}
+}
+function select(id,remember=true){
+ selected=effects.find(e=>e.id===id)||effects[0];progress=0;slider.value=0;$('[data-progress]').textContent='0%';
+ $('[data-name]').textContent=selected.id+' · '+selected.name;$('[data-summary]').textContent=selected.summary;
+ root.querySelectorAll('[data-effect-id]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.effectId===selected.id)));
+ $('[data-play]').hidden=selected.group!=='load';$('[data-enter]').hidden=selected.group!=='hover';$('[data-leave]').hidden=selected.group!=='hover';
+ $('[data-scroll-controls]').hidden=selected.group!=='scroll';$('[data-direction-controls]').hidden=selected.kind!=='direction';
+ $('#wi-brief').value='我想使用 '+selected.name+'（'+selected.id+'）。预期行为：'+selected.summary+' 请结合我的目标页面明确对象、开始条件、初态与终态、离开/重入规则、触摸与键盘替代方式，再按我的要求整理或实现。';
+ $('[data-use-status]').textContent='';build();if(selected.group==='load')message('点击播放观察变化');if(remember)save();
+}
+for(const [key,title] of Object.entries(groups)){
+ const group=document.createElement('div');group.className='wi-group';const h=document.createElement('h3');h.textContent=title;group.appendChild(h);
+ effects.filter(e=>e.group===key).forEach(e=>{const b=document.createElement('button');b.className='btn';b.type='button';b.dataset.effectId=e.id;b.textContent=e.id+' '+e.name;b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>select(e.id));group.appendChild(b);});$('[data-catalogue]').appendChild(group);
+}
+$('[data-play]').addEventListener('click',play);
+$('[data-enter]').addEventListener('click',()=>hover(true));
+$('[data-leave]').addEventListener('click',()=>hover(false));
+root.querySelectorAll('[data-direction]').forEach(b=>b.addEventListener('click',()=>{lastDirection=b.dataset.direction;hover(!inside);}));
+slider.addEventListener('input',()=>applyProgress(slider.value));slider.addEventListener('change',save);
+reduce.addEventListener('change',()=>{const p=progress;build();if(selected.group==='scroll')applyProgress(p);save();});
+$('[data-use]').addEventListener('click',async()=>{if(window.openai?.sendFollowUpMessage){await window.openai.sendFollowUpMessage({prompt:$('#wi-brief').value,title:'继续使用 '+selected.name});}else{$('#wi-brief').focus();$('#wi-brief').select();$('[data-use-status]').textContent='需求已选中，可复制回聊天继续';}});
+function restore(state){if(!state)return;const id=state.modelContent?.effectId,pc=state.privateContent;if(typeof pc?.reduce==='boolean')reduce.checked=pc.reduce;if(id)select(id,false);if(selected.group==='scroll'&&typeof pc?.progress==='number')applyProgress(pc.progress);}
+select('L01',false);restore(window.openai?.widgetState);
+window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else if(selected.kind==='smooth'){applyProgress(progress);}});
+})();
+</script>
+</main></body></html>
