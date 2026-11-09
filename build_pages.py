@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent
 page = (ROOT / "preview/网页交互效果预览.html").read_text(encoding="utf-8")
 page = page.replace('<title>网页交互效果预览</title>', '''<title>网页交互效果 · 32 项可操作演示 | KELEN</title>
 <meta name="description" content="32 项网页交互原理演示：加载转场、滚动、悬停、弹簧与拖拽。直接操作预览，复制需求描述，安装可复用的 Codex skill。">
-<link rel="canonical" href="https://kelen1421.github.io/web-interaction-effects/">''')
+<link rel="canonical" href="https://web-interaction-effects-kelen.kepaniizzard400.chatgpt.site/">''')
 page = page.replace('<h2>网页交互效果预览</h2>', '<h1>网页交互效果</h1>')
 page = page.replace('data-initial-effect="L01"', 'data-initial-effect="P04"', 1)
 page = page.replace('data-use>按这个效果继续</button>', 'data-use>复制需求描述</button>')
